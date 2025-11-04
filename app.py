@@ -1,113 +1,94 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
 import random
+import requests
 
-# -------------------------------
-# Page Config
-# -------------------------------
+# ------------------------
+# Page setup
+# ------------------------
 st.set_page_config(page_title="KOSPI200 Stock Recommendation System", layout="wide")
 
-# -------------------------------
-# Sidebar
-# -------------------------------
-st.sidebar.header("⚙️ Settings")
+st.title("📈 KOSPI200 Stock Recommendation System")
+st.caption("Easily understand the Korean stock market with AI-powered insights.")
 
+# ------------------------
+# Sidebar settings
+# ------------------------
+st.sidebar.header("⚙️ Analysis Settings")
 num_stocks = st.sidebar.slider("Number of recommended stocks", 3, 10, 5)
-min_volume = st.sidebar.number_input("Minimum trading volume", value=100, step=10)
+min_volume = st.sidebar.number_input("Minimum trade volume", 0, 1000000, 100000)
+run_analysis = st.sidebar.button("🚀 Start Analysis")
 
-if st.sidebar.button("Start Analysis"):
-    st.session_state["analyze"] = True
-
-if st.sidebar.button("Reset"):
-    st.session_state["analyze"] = False
-
-# -------------------------------
-# Title
-# -------------------------------
-st.title("📊 KOSPI200 Stock Recommendation System")
-st.markdown("Easily understandable stock analysis tool for beginners and professionals.")
-
-# -------------------------------
-# Fake Data Generator
-# -------------------------------
-def generate_fake_data(n):
-    companies = ["NAVER", "Samsung Electronics", "Kakao", "Hyundai Motors", "LG Chem",
-                 "POSCO", "SK Hynix", "Kia", "AmorePacific", "Celltrion"]
+# ------------------------
+# Dummy stock data generator
+# ------------------------
+def generate_fake_data(n=5):
+    stock_names = ["Samsung Electronics", "Hyundai Motor", "Kakao", "NAVER", "SK Hynix",
+                   "LG Chem", "POSCO", "Kia", "Samsung C&T", "KT&G"]
     data = []
     for i in range(n):
-        company = random.choice(companies)
-        price = random.randint(50000, 300000)
-        score = round(random.uniform(6.5, 9.5), 1)
-        recent_return = round(random.uniform(-3, 5), 1)
-        volume = random.randint(50, 500)
-        data.append({
-            "rank": i + 1,
-            "company": company,
-            "price": price,
-            "score": score,
-            "recent_return": recent_return,
-            "volume": volume
-        })
-    return pd.DataFrame(data)
+        name = random.choice(stock_names)
+        price = random.randint(40000, 300000)
+        score = round(random.uniform(6, 10), 1)
+        recent_return = round(random.uniform(-5, 10), 1)
+        volume = random.randint(min_volume, min_volume + 500000)
+        data.append([name, price, score, recent_return, volume])
+    df = pd.DataFrame(data, columns=["Stock", "Price (₩)", "Score", "Recent Return (%)", "Volume"])
+    return df
 
-# -------------------------------
-# Analysis Results
-# -------------------------------
-if st.session_state.get("analyze", False):
-    st.subheader(f"🏅 Top {num_stocks} Recommended Stocks")
+# ------------------------
+# Stock chart (plotly)
+# ------------------------
+def make_chart(stock_name):
+    days = pd.date_range(end=pd.Timestamp.today(), periods=30)
+    price = np.cumsum(np.random.randn(30)) + random.randint(50000, 150000)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=days, y=price, mode='lines+markers', name='Price'))
+    fig.update_layout(title=f"{stock_name} - 30 Days Price Trend",
+                      xaxis_title="Date",
+                      yaxis_title="Price (₩)",
+                      template="plotly_white",
+                      height=300)
+    return fig
+
+# ------------------------
+# Fake news summary (could be replaced with real API)
+# ------------------------
+def fake_news_summary(stock_name):
+    summaries = [
+        f"{stock_name} shows strong rebound after recent market correction.",
+        f"Analysts expect {stock_name} to outperform due to solid earnings.",
+        f"Investors are optimistic about {stock_name}'s expansion in AI sector.",
+        f"{stock_name} faces temporary decline amid global uncertainty."
+    ]
+    return random.choice(summaries)
+
+# ------------------------
+# Main section
+# ------------------------
+if run_analysis:
+    st.subheader("📊 Recommended Stocks")
     df = generate_fake_data(num_stocks)
+    st.dataframe(df, use_container_width=True)
 
-    cols = st.columns(num_stocks)
-    for i, col in enumerate(cols):
-        with col:
-            row = df.iloc[i]
-            st.markdown(f"### {row['rank']}. {row['company']}")
-            st.metric("Current Price", f"₩{row['price']:,}")
-            st.metric("Score", f"{row['score']}/10")
-            st.metric("Recent Return", f"{row['recent_return']}%")
-            st.write("**Key Insights:**")
-            st.markdown("- ✅ Strong short-term momentum")
-            st.markdown("- ✅ High trading volume")
-            st.markdown("- ✅ Positive investor sentiment")
+    for i, row in df.iterrows():
+        st.markdown(f"### 🏆 {i+1}. {row['Stock']}")
+        col1, col2 = st.columns([2, 3])
+
+        with col1:
+            st.metric(label="Current Price", value=f"{row['Price (₩)']:,}₩")
+            st.metric(label="AI Score", value=f"{row['Score']} / 10")
+            st.metric(label="Recent Return", value=f"{row['Recent Return (%)']}%")
+            st.metric(label="Trade Volume", value=f"{row['Volume']:,}")
+
+        with col2:
+            fig = make_chart(row['Stock'])
+            st.plotly_chart(fig, use_container_width=True)
+
+        st.info(fake_news_summary(row['Stock']))
+        st.markdown("---")
+
 else:
-    st.info("Please set analysis conditions on the left and click **Start Analysis**.")
-
-# -------------------------------
-# Market Summary Section
-# -------------------------------
-st.divider()
-st.subheader("📈 Market Summary")
-st.write("""
-The KOSPI200 index has shown mild fluctuations today. 
-Technology and automotive sectors lead the gains, while chemical and energy stocks face slight declines.
-""")
-
-# Example table
-market_data = pd.DataFrame({
-    "Sector": ["Technology", "Automobile", "Chemicals", "Finance", "Energy"],
-    "Change (%)": [1.8, 1.2, -0.4, 0.5, -0.7]
-})
-st.dataframe(market_data, use_container_width=True)
-
-# -------------------------------
-# News Section
-# -------------------------------
-st.divider()
-st.subheader("📰 Recent Market News")
-news_items = [
-    "KOSPI gains 1.2% as global markets rally.",
-    "Foreign investors continue net buying of blue-chip stocks.",
-    "Analysts expect tech rebound amid AI demand growth.",
-    "Won strengthens slightly against USD amid policy optimism."
-]
-for news in news_items:
-    st.markdown(f"- {news}")
-
-# -------------------------------
-# Footer
-# -------------------------------
-st.divider()
-st.markdown(
-    "<p style='text-align:center; color:gray;'>© 2025 Sungkyunkwan University | Developed for educational purposes.</p>",
-    unsafe_allow_html=True
-)
+    st.markdown("👈 Adjust settings on the sidebar and click **Start Analysis** to begin.")

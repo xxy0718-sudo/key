@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import random
-import requests
 
 # ------------------------
 # Page setup
@@ -14,7 +13,19 @@ st.title("📈 KOSPI200 Stock Recommendation System")
 st.caption("Easily understand the Korean stock market with AI-powered insights.")
 
 # ------------------------
-# Sidebar settings
+# Sidebar: API section
+# ------------------------
+st.sidebar.header("🔑 API Authentication")
+api_key = st.sidebar.text_input("Enter your API Key", type="password")
+st.sidebar.caption("You can leave this empty for demo mode.")
+
+if api_key:
+    st.sidebar.success("✅ API Key successfully added!")
+else:
+    st.sidebar.warning("⚠️ Running in demo mode (no API data)")
+
+# ------------------------
+# Sidebar: Analysis settings
 # ------------------------
 st.sidebar.header("⚙️ Analysis Settings")
 num_stocks = st.sidebar.slider("Number of recommended stocks", 3, 10, 5)
@@ -22,7 +33,7 @@ min_volume = st.sidebar.number_input("Minimum trade volume", 0, 1000000, 100000)
 run_analysis = st.sidebar.button("🚀 Start Analysis")
 
 # ------------------------
-# Dummy stock data generator
+# Generate dummy stock data
 # ------------------------
 def generate_fake_data(n=5):
     stock_names = ["Samsung Electronics", "Hyundai Motor", "Kakao", "NAVER", "SK Hynix",
@@ -39,7 +50,7 @@ def generate_fake_data(n=5):
     return df
 
 # ------------------------
-# Stock chart (plotly)
+# Stock chart (Plotly)
 # ------------------------
 def make_chart(stock_name):
     days = pd.date_range(end=pd.Timestamp.today(), periods=30)
@@ -54,7 +65,7 @@ def make_chart(stock_name):
     return fig
 
 # ------------------------
-# Fake news summary (could be replaced with real API)
+# Fake news summary
 # ------------------------
 def fake_news_summary(stock_name):
     summaries = [
